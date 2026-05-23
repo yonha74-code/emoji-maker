@@ -238,7 +238,7 @@ textarea:focus{border-color:#c77dff;} textarea::placeholder{color:#555568;}
   <div class="result" id="result">
     <div class="rc">
       <h3>🎉 이모티콘 완성!</h3>
-      <div class="pf"><img id="rImg" alt="이모티콘"></div>
+      <div class="pf"><div id="rImgWrap" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div></div>
       <p style="font-size:10px;color:#555568">미리보기</p>
       <div class="dlrow">
         <button class="db g" onclick="dl('png')">⬇ PNG 저장</button>
@@ -314,13 +314,41 @@ function setUP(t){document.getElementById('upt').value=t;}
 function handleUp(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){upB64=ev.target.result;var img=document.getElementById('upPrev');img.src=ev.target.result;img.style.display='block';document.getElementById('uz').style.display='none';};r.readAsDataURL(f);}
 function showLoad(msg){document.querySelectorAll('.panel').forEach(function(p){p.style.display='none';});document.getElementById('loading').style.display='block';document.getElementById('result').style.display='none';document.getElementById('lmsg').innerHTML=msg||'만드는 중...';}
 function hideLoad(){document.getElementById('loading').style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.style.display='';});document.querySelector('.panel.on').style.display='block';}
-function showRes(url,anim){
-  hideLoad();resUrl=url;resAnim=anim;
-  var img=document.getElementById('rImg');
-  // 이전 src 완전히 초기화 후 재설정
-  img.src='';
-  img.className='anim-'+anim;
-  setTimeout(function(){ img.src=url; },30);
+function showRes(svgOrUrl, anim){
+  hideLoad();
+  resAnim = anim;
+
+  var wrap = document.getElementById('rImgWrap');
+  wrap.innerHTML = ''; // 완전 초기화
+
+  // SVG 문자열인지 data URI인지 판별
+  var svgStr = '';
+  if(svgOrUrl.indexOf('<svg') === 0){
+    svgStr = svgOrUrl;
+  } else if(svgOrUrl.indexOf('data:image/svg') === 0){
+    svgStr = decodeURIComponent(svgOrUrl.replace('data:image/svg+xml;charset=utf-8,',''));
+  } else {
+    // PNG/JPEG (직접그리기, 업로드 직접저장)
+    resUrl = svgOrUrl;
+    var img = document.createElement('img');
+    img.src = svgOrUrl;
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;';
+    img.className = 'anim-' + anim;
+    wrap.appendChild(img);
+    document.getElementById('result').style.display='block';
+    document.getElementById('result').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+
+  resUrl = svgStr; // SVG 원본 저장
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(svgStr, 'image/svg+xml');
+  var svgEl = doc.querySelector('svg');
+  if(!svgEl){ wrap.innerHTML = '<p style="color:#ff6b9d;font-size:11px">SVG 파싱 오류</p>'; return; }
+  svgEl.style.cssText = 'width:100%;height:100%;';
+  svgEl.className = 'anim-' + anim;
+  wrap.appendChild(svgEl);
+
   document.getElementById('result').style.display='block';
   document.getElementById('result').scrollIntoView({behavior:'smooth'});
 }
@@ -366,7 +394,7 @@ async function genDraw(){
   try{
     var d=await callAI('Make a cute SVG emoji from this drawing.'+(p?' '+p:''),b64,'image/png');
     if(!d.svg)throw new Error(d.error||'SVG 생성 실패. 다시 시도해주세요.');
-    showRes(svgDataUrl(d.svg),anims.ag1);
+    showRes(d.svg, anims.ag1);
   }catch(e){hideLoad();showErr('de',e.message);}
 }
 async function genPrompt(){
@@ -377,7 +405,7 @@ async function genPrompt(){
   try{
     var d=await callAI('Draw this as a cute SVG emoji: '+p,null,null);
     if(!d.svg)throw new Error(d.error||'SVG 생성 실패. 다시 시도해주세요.');
-    showRes(svgDataUrl(d.svg),anims.ag2);
+    showRes(d.svg, anims.ag2);
   }catch(e){hideLoad();showErr('pe',e.message);}
 }
 async function genUpAI(){
@@ -389,40 +417,49 @@ async function genUpAI(){
   try{
     var d=await callAI('Convert to cute SVG emoji sticker.'+(p?' '+p:''),b64,mime);
     if(!d.svg)throw new Error(d.error||'SVG 생성 실패. 다시 시도해주세요.');
-    showRes(svgDataUrl(d.svg),anims.ag3);
+    showRes(d.svg, anims.ag3);
   }catch(e){hideLoad();showErr('ue',e.message);}
 }
 
 function dl(fmt){
   if(!resUrl)return;
-  // 파일명 입력
   var defaultName='emoji_'+resAnim;
-  var fname=prompt('저장할 파일 이름을 입력하세요 (.'+fmt+' 제외)',defaultName);
-  if(fname===null)return; // 취소
-  if(!fname.trim())fname=defaultName;
-  fname=fname.trim().replace(/[/\\:*?"<>|]/g,'_');
+  var fname=prompt('파일 이름 (확장자 제외)', defaultName);
+  if(fname===null)return;
+  fname=(fname.trim()||defaultName).replace(/[/\\:*?"<>|]/g,'_');
 
-  var img=new Image();
-  img.onload=function(){
-    var c=document.createElement('canvas');c.width=512;c.height=512;
-    var cx=c.getContext('2d');
-    cx.clearRect(0,0,512,512);
-    cx.drawImage(img,56,56,400,400);
+  // SVG 문자열이면 canvas로 변환 후 저장
+  var isSVG = resUrl.trim().indexOf('<svg') === 0;
+  if(isSVG){
+    var svgBlob = new Blob([resUrl],{type:'image/svg+xml;charset=utf-8'});
+    var blobUrl = URL.createObjectURL(svgBlob);
+    var img = new Image();
+    img.onload = function(){
+      var c=document.createElement('canvas');c.width=512;c.height=512;
+      var cx=c.getContext('2d');
+      cx.clearRect(0,0,512,512);
+      cx.drawImage(img,56,56,400,400);
+      URL.revokeObjectURL(blobUrl);
+      var a=document.createElement('a');
+      a.download=fname+'.'+fmt;
+      a.href=c.toDataURL(fmt==='webp'?'image/webp':'image/png',.95);
+      a.click();
+    };
+    img.onerror=function(){
+      // canvas 변환 실패시 SVG 파일로 저장
+      var a=document.createElement('a');
+      a.download=fname+'.svg';
+      a.href=blobUrl;
+      a.click();
+    };
+    img.src=blobUrl;
+  } else {
+    // PNG/JPEG 직접 저장
     var a=document.createElement('a');
     a.download=fname+'.'+fmt;
-    a.href=c.toDataURL(fmt==='webp'?'image/webp':'image/png',.95);
+    a.href=resUrl;
     a.click();
-  };
-  img.onerror=function(){
-    // canvas 실패시 SVG 직접 저장
-    var svgStr=decodeURIComponent(resUrl.replace('data:image/svg+xml;charset=utf-8,',''));
-    var blob=new Blob([svgStr],{type:'image/svg+xml'});
-    var a=document.createElement('a');
-    a.download=fname+'.svg';
-    a.href=URL.createObjectURL(blob);
-    a.click();
-  };
-  img.src=resUrl;
+  }
 }
 // 저장된 키 자동 로드
 (function(){
