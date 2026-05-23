@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>이모티콘 메이커</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;background:#0f0f18;color:#f0f0f8;min-height:100vh;}
+.app{max-width:420px;margin:0 auto;padding:12px 12px 60px;}
+.hdr{text-align:center;padding:10px 0 14px;}
+.hdr h1{font-size:20px;font-weight:700;background:linear-gradient(135deg,#ff6b9d,#c77dff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hdr p{font-size:11px;color:#9090b8;margin-top:3px;}
+
+.apibox{background:#1a1a28;border:1px solid #2a2a3e;border-radius:14px;padding:13px;margin-bottom:13px;}
+.apibox h3{font-size:12px;font-weight:700;margin-bottom:8px;}
+.apiproviders{display:flex;gap:6px;margin-bottom:10px;}
+.apiprov{flex:1;padding:9px 6px;border-radius:10px;border:1px solid #2a2a3e;background:#0f0f18;text-align:center;cursor:pointer;transition:all .15s;}
+.apiprov .pico{font-size:20px;display:block;}
+.apiprov .pname{font-size:10px;color:#9090b8;font-weight:600;display:block;margin-top:2px;}
+.apiprov .pfree{font-size:9px;color:#1a9e75;display:block;}
+.apiprov.on{border-color:#48cae4;}
+.apiprov.on .pname{color:#48cae4;}
+.apirow{display:flex;gap:7px;margin-bottom:6px;}
+.apirow input{flex:1;height:32px;border-radius:8px;border:1px solid #2a2a3e;background:#0f0f18;color:#f0f0f8;font-size:11px;padding:0 9px;outline:none;font-family:monospace;}
+.apirow input:focus{border-color:#c77dff;}
+.apibtn{height:32px;padding:0 11px;border-radius:8px;border:1px solid #1a9e75;color:#1a9e75;background:transparent;font-size:11px;font-weight:600;cursor:pointer;}
+.apist{font-size:10px;color:#9090b8;margin-bottom:6px;} .apist.ok{color:#1a9e75;} .apist.no{color:#ff6b9d;}
+.apihelp{background:#0f0f18;border:1px solid #2a2a3e;border-radius:8px;padding:9px 11px;font-size:10px;color:#9090b8;line-height:1.7;margin-top:6px;}
+.apihelp a{color:#48cae4;} .apihelp summary{cursor:pointer;font-weight:700;color:#c77dff;font-size:11px;}
+
+.tabs{display:flex;gap:6px;margin-bottom:13px;}
+.tab{flex:1;padding:9px 4px;border-radius:10px;border:1px solid #2a2a3e;background:#1a1a28;color:#9090b8;font-size:11px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.tab .ico{font-size:18px;}
+.tab.on{border-color:#ff6b9d;color:#ff6b9d;background:rgba(255,107,157,.1);}
+.panel{display:none;} .panel.on{display:block;}
+.card{background:#1a1a28;border:1px solid #2a2a3e;border-radius:14px;padding:13px;margin-bottom:11px;}
+.lbl{font-size:10px;font-weight:700;color:#9090b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.pal{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;}
+.pc{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s;flex-shrink:0;}
+.pc.on,.pc:hover{transform:scale(1.25);border-color:#fff;}
+.toolrow{display:flex;gap:6px;align-items:center;margin-bottom:9px;}
+.tb{width:34px;height:34px;border-radius:8px;border:1px solid #2a2a3e;background:#0f0f18;color:#f0f0f8;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tb.on{border-color:#ff6b9d;color:#ff6b9d;background:rgba(255,107,157,.12);}
+.cdot{width:34px;height:34px;border-radius:8px;border:1px solid #2a2a3e;cursor:pointer;flex-shrink:0;}
+input[type=color]{position:absolute;opacity:0;width:0;height:0;pointer-events:none;}
+input[type=range]{flex:1;min-width:50px;accent-color:#ff6b9d;}
+canvas#dc{width:100%;aspect-ratio:1;border-radius:10px;background:#fff;display:block;touch-action:none;cursor:crosshair;border:1px solid #2a2a3e;}
+.row2{display:flex;gap:6px;margin-top:8px;}
+.sb{flex:1;padding:8px;border-radius:8px;border:1px solid #2a2a3e;background:#0f0f18;color:#9090b8;font-size:11px;font-weight:600;cursor:pointer;}
+.ag{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:11px;}
+.ao{padding:10px 4px;border-radius:10px;border:1px solid #2a2a3e;background:#0f0f18;text-align:center;cursor:pointer;}
+.ao .aico{font-size:20px;display:block;}
+.ao span{font-size:10px;color:#9090b8;font-weight:600;display:block;margin-top:2px;}
+.ao.on{border-color:#ffd166;} .ao.on span{color:#ffd166;}
+textarea{width:100%;border-radius:10px;border:1px solid #2a2a3e;background:#0f0f18;color:#f0f0f8;font-size:13px;padding:10px 12px;resize:none;outline:none;line-height:1.5;font-family:inherit;}
+textarea:focus{border-color:#c77dff;} textarea::placeholder{color:#555568;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.chip{padding:5px 10px;border-radius:50px;border:1px solid #2a2a3e;background:#0f0f18;color:#9090b8;font-size:11px;cursor:pointer;}
+.chip:hover{border-color:#c77dff;color:#c77dff;}
+.uz{border:2px dashed #2a2a3e;border-radius:14px;padding:26px 16px;text-align:center;cursor:pointer;position:relative;margin-bottom:11px;}
+.uz input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.uz .uico{font-size:30px;display:block;margin-bottom:6px;}
+.uz p{font-size:13px;color:#9090b8;}
+#upPrev{width:100%;max-width:160px;border-radius:10px;margin:0 auto 11px;display:none;}
+.gbtn{width:100%;padding:14px;border-radius:11px;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:5px;}
+.gbtn:active{transform:scale(.97);}
+.gbtn.pink{background:linear-gradient(135deg,#ff6b9d,#e8417a);}
+.gbtn.pu{background:linear-gradient(135deg,#c77dff,#7c5cbf);}
+.divr{display:flex;align-items:center;gap:8px;margin:11px 0;}
+.divr span{font-size:10px;color:#555568;white-space:nowrap;}
+.divr::before,.divr::after{content:'';flex:1;height:1px;background:#2a2a3e;}
+.loading{display:none;text-align:center;padding:40px 20px;}
+.spin{width:40px;height:40px;border:3px solid #2a2a3e;border-top-color:#ff6b9d;border-radius:50%;animation:rot .7s linear infinite;margin:0 auto 12px;}
+@keyframes rot{to{transform:rotate(360deg);}}
+.loading p{font-size:13px;color:#9090b8;line-height:1.7;}
+.result{display:none;}
+.rc{background:#1a1a28;border:1px solid #2a2a3e;border-radius:14px;padding:18px;text-align:center;}
+.rc h3{font-size:14px;font-weight:700;color:#ffd166;margin-bottom:13px;}
+.pf{width:140px;height:140px;margin:0 auto 9px;border-radius:16px;border:1px solid #2a2a3e;background:#0f0f18;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+#rImg{width:100%;height:100%;object-fit:contain;}
+.dlrow{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px;}
+.db{padding:8px 14px;border-radius:50px;border:1px solid;font-size:11px;font-weight:700;cursor:pointer;background:transparent;display:flex;align-items:center;gap:5px;}
+.db.g{border-color:#48cae4;color:#48cae4;} .db.p{border-color:#c77dff;color:#c77dff;}
+.tip{font-size:10px;color:#555568;margin-top:9px;line-height:1.6;}
+.ab{width:100%;padding:9px;border-radius:10px;margin-top:11px;border:1px solid #2a2a3e;background:#0f0f18;color:#9090b8;font-size:12px;font-weight:600;cursor:pointer;}
+.err{font-size:11px;color:#ff6b9d;margin-top:7px;padding:8px 10px;border-radius:9px;background:rgba(255,107,157,.1);border:1px solid rgba(255,107,157,.25);display:none;line-height:1.5;}
+.anim-bounce{animation:bnc .6s ease-in-out infinite alternate;}
+.anim-spin{animation:rot 1.2s linear infinite;}
+.anim-shake{animation:shk .4s infinite;}
+.anim-pulse{animation:pls .8s ease-in-out infinite alternate;}
+.anim-float{animation:flt 2s ease-in-out infinite;}
+.anim-wobble{animation:wbl 1s infinite;}
+@keyframes bnc{from{transform:translateY(0);}to{transform:translateY(-18px);}}
+@keyframes shk{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px) rotate(-5deg);}75%{transform:translateX(8px) rotate(5deg);}}
+@keyframes pls{from{transform:scale(.83);}to{transform:scale(1.17);}}
+@keyframes flt{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-14px) rotate(2deg);}}
+@keyframes wbl{0%,100%{transform:rotate(0) scale(1);}25%{transform:rotate(-11deg) scale(1.1);}75%{transform:rotate(11deg) scale(1.1);}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <h1>✨ 이모티콘 메이커</h1>
+    <p>AI로 나만의 움직이는 이모티콘을</p>
+  </div>
+
+  <div class="apibox">
+    <h3>🔑 AI 연결</h3>
+    <div class="apiproviders">
+      <div class="apiprov on" id="prov-google" onclick="setProv('google')">
+        <span class="pico">🌐</span>
+        <span class="pname">Google AI</span>
+        <span class="pfree">✓ 무료</span>
+      </div>
+      <div class="apiprov" id="prov-anthropic" onclick="setProv('anthropic')">
+        <span class="pico">🤖</span>
+        <span class="pname">Claude</span>
+        <span class="pfree">유료</span>
+      </div>
+    </div>
+    <div class="apirow">
+      <input type="password" id="apiKey" placeholder="AIza... (Google AI Studio 키)">
+      <button class="apibtn" onclick="saveKey()">저장</button>
+    </div>
+    <div class="apist" id="apist">키를 입력하면 AI 기능이 활성화돼요</div>
+    <details>
+      <summary>🆓 Google 무료 키 발급 방법</summary>
+      <div class="apihelp">
+        1. <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> 접속<br>
+        2. 구글 계정 로그인<br>
+        3. <b>Create API key</b> 클릭<br>
+        4. 키 복사 → 위에 붙여넣기 → 저장<br><br>
+        ✅ 신용카드 불필요 · 하루 수백 회 무료
+      </div>
+    </details>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="sw('draw',this)"><span class="ico">✏️</span>그리기</button>
+    <button class="tab" onclick="sw('prompt',this)"><span class="ico">💬</span>프롬프트</button>
+    <button class="tab" onclick="sw('upload',this)"><span class="ico">🖼️</span>업로드</button>
+  </div>
+
+  <div class="panel on" id="p-draw">
+    <div class="card">
+      <div class="pal" id="pal"></div>
+      <div class="toolrow">
+        <button class="tb on" id="t-pen" onclick="setTool('pen')">✏️</button>
+        <button class="tb" id="t-eraser" onclick="setTool('eraser')">🧹</button>
+        <button class="tb" id="t-fill" onclick="setTool('fill')">🪣</button>
+        <div style="position:relative;flex-shrink:0">
+          <div class="cdot" id="cdot" style="background:#ff6b9d" onclick="document.getElementById('ci').click()"></div>
+          <input type="color" id="ci" value="#ff6b9d" oninput="setColor(this.value)">
+        </div>
+        <input type="range" min="2" max="26" value="8" oninput="bsz=+this.value">
+      </div>
+      <canvas id="dc" width="300" height="300"></canvas>
+      <div class="row2">
+        <button class="sb" onclick="clrC()">🗑 지우기</button>
+        <button class="sb" onclick="undoC()">↩ 되돌리기</button>
+      </div>
+    </div>
+    <div class="lbl">애니메이션</div>
+    <div class="ag" id="ag1">
+      <div class="ao on" data-a="bounce" onclick="selA(this,'ag1')"><span class="aico">⬆️</span><span>통통</span></div>
+      <div class="ao" data-a="spin" onclick="selA(this,'ag1')"><span class="aico">🔄</span><span>빙글</span></div>
+      <div class="ao" data-a="shake" onclick="selA(this,'ag1')"><span class="aico">📳</span><span>덜덜</span></div>
+      <div class="ao" data-a="pulse" onclick="selA(this,'ag1')"><span class="aico">💓</span><span>두근</span></div>
+      <div class="ao" data-a="float" onclick="selA(this,'ag1')"><span class="aico">🌊</span><span>둥실</span></div>
+      <div class="ao" data-a="wobble" onclick="selA(this,'ag1')"><span class="aico">🎭</span><span>흔들</span></div>
+    </div>
+    <div class="divr"><span>AI 없이 바로</span></div>
+    <button class="gbtn pu" onclick="genDirect()">🪄 그림 그대로 이모티콘</button>
+    <div class="divr"><span>AI로 귀엽게 변환</span></div>
+    <textarea id="dp" rows="2" placeholder="예: 귀엽게 눈 크게, 하트 추가 (선택)"></textarea>
+    <button class="gbtn pink" onclick="genDraw()">✨ AI로 변환하기</button>
+    <div class="err" id="de"></div>
+  </div>
+
+  <div class="panel" id="p-prompt">
+    <div class="chips">
+      <span class="chip" onclick="setPT('춤추는 귀여운 고양이')">춤추는 고양이</span>
+      <span class="chip" onclick="setPT('하트를 뿜는 강아지')">하트 강아지</span>
+      <span class="chip" onclick="setPT('빵빵하게 웃는 얼굴')">빵빵 웃음</span>
+      <span class="chip" onclick="setPT('손 흔드는 곰돌이')">손 흔드는 곰</span>
+      <span class="chip" onclick="setPT('별을 뿌리는 마법사')">마법사</span>
+      <span class="chip" onclick="setPT('달리는 토끼')">달리는 토끼</span>
+    </div>
+    <textarea id="pt" rows="4" placeholder="예: 분홍 고양이가 왕관 쓰고 양손 흔들어요. 볼에 하트, 귀엽고 통통한 스타일..."></textarea>
+    <div class="lbl" style="margin-top:11px">애니메이션</div>
+    <div class="ag" id="ag2">
+      <div class="ao on" data-a="bounce" onclick="selA(this,'ag2')"><span class="aico">⬆️</span><span>통통</span></div>
+      <div class="ao" data-a="spin" onclick="selA(this,'ag2')"><span class="aico">🔄</span><span>빙글</span></div>
+      <div class="ao" data-a="shake" onclick="selA(this,'ag2')"><span class="aico">📳</span><span>덜덜</span></div>
+      <div class="ao" data-a="pulse" onclick="selA(this,'ag2')"><span class="aico">💓</span><span>두근</span></div>
+      <div class="ao" data-a="float" onclick="selA(this,'ag2')"><span class="aico">🌊</span><span>둥실</span></div>
+      <div class="ao" data-a="wobble" onclick="selA(this,'ag2')"><span class="aico">🎭</span><span>흔들</span></div>
+    </div>
+    <button class="gbtn pink" onclick="genPrompt()">✨ AI로 이모티콘 만들기</button>
+    <div class="err" id="pe"></div>
+  </div>
+
+  <div class="panel" id="p-upload">
+    <div class="uz" id="uz">
+      <input type="file" id="fi" accept="image/*" onchange="handleUp(event)">
+      <span class="uico">🖼️</span>
+      <p><strong style="color:#48cae4">탭해서 이미지 선택</strong></p>
+    </div>
+    <img id="upPrev" alt="업로드 이미지">
+    <div class="divr"><span>AI 없이 바로</span></div>
+    <button class="gbtn pu" onclick="genUpDirect()">🪄 이미지 그대로 이모티콘</button>
+    <div class="divr"><span>AI로 변환</span></div>
+    <div class="chips">
+      <span class="chip" onclick="setUP('귀여운 스티커 스타일로')">귀엽게</span>
+      <span class="chip" onclick="setUP('카툰 만화 스타일로')">카툰 스타일</span>
+      <span class="chip" onclick="setUP('단순하게')">단순하게</span>
+    </div>
+    <textarea id="upt" rows="2" placeholder="예: 귀여운 스티커 스타일, 눈 크게, 홍조 추가..."></textarea>
+    <div class="lbl" style="margin-top:11px">애니메이션</div>
+    <div class="ag" id="ag3">
+      <div class="ao on" data-a="bounce" onclick="selA(this,'ag3')"><span class="aico">⬆️</span><span>통통</span></div>
+      <div class="ao" data-a="spin" onclick="selA(this,'ag3')"><span class="aico">🔄</span><span>빙글</span></div>
+      <div class="ao" data-a="shake" onclick="selA(this,'ag3')"><span class="aico">📳</span><span>덜덜</span></div>
+      <div class="ao" data-a="pulse" onclick="selA(this,'ag3')"><span class="aico">💓</span><span>두근</span></div>
+      <div class="ao" data-a="float" onclick="selA(this,'ag3')"><span class="aico">🌊</span><span>둥실</span></div>
+      <div class="ao" data-a="wobble" onclick="selA(this,'ag3')"><span class="aico">🎭</span><span>흔들</span></div>
+    </div>
+    <button class="gbtn pink" onclick="genUpAI()">✨ AI로 변환하기</button>
+    <div class="err" id="ue"></div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spin"></div>
+    <p id="lmsg">만드는 중...<br>잠깐만요!</p>
+  </div>
+
+  <div class="result" id="result">
+    <div class="rc">
+      <h3>🎉 이모티콘 완성!</h3>
+      <div class="pf"><img id="rImg" alt="이모티콘"></div>
+      <p style="font-size:10px;color:#555568">미리보기</p>
+      <div class="dlrow">
+        <button class="db g" onclick="dl('png')">⬇ PNG 저장</button>
+        <button class="db p" onclick="dl('webp')">⬇ WebP 저장</button>
+      </div>
+      <p class="tip">카카오톡 → PNG · 텔레그램 → WebP · 디스코드 → 서버 이모지</p>
+      <button class="ab" onclick="again()">🔁 다시 만들기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var tool='pen',bclr='#ff6b9d',bsz=8,drawing=false,hist=[],lx,ly;
+var anims={ag1:'bounce',ag2:'bounce',ag3:'bounce'};
+var resUrl=null,resAnim='bounce',upB64=null;
+var apiKey='',provider='google';
+
+var canvas=document.getElementById('dc');
+var ctx=canvas.getContext('2d');
+ctx.fillStyle='#fff';ctx.fillRect(0,0,300,300);
+
+var COLORS=['#ff6b9d','#ff9f43','#ffd166','#06d6a0','#48cae4','#c77dff','#333','#fff','#fd79a8','#a29bfe'];
+var pal=document.getElementById('pal');
+COLORS.forEach(function(c,i){
+  var d=document.createElement('div');d.className='pc'+(i===0?' on':'');d.style.background=c;
+  d.onclick=function(){setColor(c);document.querySelectorAll('.pc').forEach(function(p){p.classList.remove('on');});d.classList.add('on');};
+  pal.appendChild(d);
+});
+
+function getPos(e){var r=canvas.getBoundingClientRect(),sx=300/r.width,sy=300/r.height,s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*sx,y:(s.clientY-r.top)*sy};}
+function saveH(){hist.push(ctx.getImageData(0,0,300,300));if(hist.length>25)hist.shift();}
+canvas.addEventListener('mousedown',function(e){drawing=true;saveH();var p=getPos(e);lx=p.x;ly=p.y;if(tool==='fill'){doFill(~~p.x,~~p.y);drawing=false;}});
+canvas.addEventListener('mousemove',function(e){if(!drawing)return;var p=getPos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle=tool==='eraser'?'#fff':bclr;ctx.lineWidth=tool==='eraser'?bsz*2:bsz;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();lx=p.x;ly=p.y;});
+canvas.addEventListener('mouseup',function(){drawing=false;});
+canvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;saveH();var p=getPos(e);lx=p.x;ly=p.y;if(tool==='fill'){doFill(~~p.x,~~p.y);drawing=false;}},{passive:false});
+canvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=getPos(e);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle=tool==='eraser'?'#fff':bclr;ctx.lineWidth=tool==='eraser'?bsz*2:bsz;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();lx=p.x;ly=p.y;},{passive:false});
+canvas.addEventListener('touchend',function(){drawing=false;});
+function setTool(t){tool=t;['pen','eraser','fill'].forEach(function(n){document.getElementById('t-'+n).classList.toggle('on',n===t);});}
+function setColor(c){bclr=c;document.getElementById('cdot').style.background=c;document.getElementById('ci').value=c;if(tool==='eraser')setTool('pen');}
+function clrC(){saveH();ctx.fillStyle='#fff';ctx.fillRect(0,0,300,300);}
+function undoC(){if(hist.length)ctx.putImageData(hist.pop(),0,0);}
+function hex2rgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+function doFill(sx,sy){
+  var d=ctx.getImageData(0,0,300,300),data=d.data,i=(sy*300+sx)*4;
+  var sr=data[i],sg=data[i+1],sb=data[i+2],sa=data[i+3];
+  var rgb=hex2rgb(bclr),tr=rgb[0],tg=rgb[1],tb=rgb[2];
+  if(sr===tr&&sg===tg&&sb===tb)return;
+  var stk=[[sx,sy]];
+  while(stk.length){var pt=stk.pop(),x=pt[0],y=pt[1];if(x<0||x>=300||y<0||y>=300)continue;var j=(y*300+x)*4;if(data[j]!==sr||data[j+1]!==sg||data[j+2]!==sb||data[j+3]!==sa)continue;data[j]=tr;data[j+1]=tg;data[j+2]=tb;data[j+3]=255;stk.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}
+  ctx.putImageData(d,0,0);
+}
+
+function setProv(p){
+  provider=p;
+  ['google','anthropic'].forEach(function(id){document.getElementById('prov-'+id).classList.toggle('on',id===p);});
+  document.getElementById('apiKey').placeholder=p==='google'?'AIza... (Google AI Studio)':'sk-ant-... (Anthropic)';
+  var s=document.getElementById('apist');s.textContent='키를 입력해주세요';s.className='apist';
+}
+function saveKey(){
+  var v=document.getElementById('apiKey').value.trim();
+  if(!v){var s=document.getElementById('apist');s.textContent='키를 입력해주세요';s.className='apist no';return;}
+  apiKey=v;
+  var s=document.getElementById('apist');
+  s.textContent='✓ '+(provider==='google'?'Google Gemini':'Claude')+' 키 저장됨';s.className='apist ok';
+}
+function sw(id,el){document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});document.getElementById('p-'+id).classList.add('on');el.classList.add('on');hideRes();}
+function selA(el,gid){document.querySelectorAll('#'+gid+' .ao').forEach(function(e){e.classList.remove('on');});el.classList.add('on');anims[gid]=el.dataset.a;}
+function setPT(t){document.getElementById('pt').value=t;}
+function setUP(t){document.getElementById('upt').value=t;}
+function handleUp(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){upB64=ev.target.result;var img=document.getElementById('upPrev');img.src=ev.target.result;img.style.display='block';document.getElementById('uz').style.display='none';};r.readAsDataURL(f);}
+function showLoad(msg){document.querySelectorAll('.panel').forEach(function(p){p.style.display='none';});document.getElementById('loading').style.display='block';document.getElementById('result').style.display='none';document.getElementById('lmsg').innerHTML=msg||'만드는 중...';}
+function hideLoad(){document.getElementById('loading').style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.style.display='';});document.querySelector('.panel.on').style.display='block';}
+function showRes(url,anim){hideLoad();resUrl=url;resAnim=anim;var img=document.getElementById('rImg');img.src=url;img.className='anim-'+anim;document.getElementById('result').style.display='block';document.getElementById('result').scrollIntoView({behavior:'smooth'});}
+function hideRes(){document.getElementById('result').style.display='none';}
+function again(){hideRes();}
+function showErr(id,msg){var e=document.getElementById(id);e.style.display='block';e.textContent='⚠️ '+msg;}
+function hideErrs(){['de','pe','ue'].forEach(function(id){document.getElementById(id).style.display='none';});}
+function genDirect(){hideErrs();showRes(canvas.toDataURL('image/png'),anims.ag1);}
+function genUpDirect(){hideErrs();if(!upB64){showErr('ue','이미지를 먼저 업로드해주세요!');return;}showRes(upB64,anims.ag3);}
+
+var SVG_SYS='Output ONLY raw SVG. No markdown, no backticks. viewBox="0 0 200 200". Cute cartoon emoji: big eyes, chubby, blush marks, bold outlines, transparent background, bright colors.';
+
+async function callAI(textPrompt,imageB64,imageMime){
+  if(!apiKey)throw new Error('API 키를 먼저 입력하고 저장해주세요!');
+  if(provider==='google'){
+    var parts=[];
+    if(imageB64)parts.push({inline_data:{mime_type:imageMime||'image/png',data:imageB64}});
+    parts.push({text:textPrompt});
+    var r=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey},body:JSON.stringify({parts:parts,systemPrompt:SVG_SYS})});
+    if(!r.ok){var e=await r.json();throw new Error((e.error&&e.error.message)||'Gemini 오류 '+r.status);}
+    var d=await r.json();
+    return((d.candidates||[])[0]||{content:{parts:[]}}).content.parts.map(function(p){return p.text||'';}).join('');
+  } else {
+    var content=[];
+    if(imageB64)content.push({type:'image',source:{type:'base64',media_type:imageMime||'image/png',data:imageB64}});
+    content.push({type:'text',text:textPrompt});
+    var r=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SVG_SYS,messages:[{role:'user',content:content}]})});
+    if(!r.ok){var e=await r.json();throw new Error((e.error&&e.error.message)||'Claude 오류 '+r.status);}
+    var d=await r.json();
+    return(d.content||[]).map(function(c){return c.text||'';}).join('');
+  }
+}
+
+function svgUrl(s){return URL.createObjectURL(new Blob([s],{type:'image/svg+xml'}));}
+function extractSVG(t){var m=t.match(/<svg[\s\S]*?<\/svg>/i);return m?m[0]:null;}
+
+async function genDraw(){
+  hideErrs();
+  var b64=canvas.toDataURL('image/png').split(',')[1],p=document.getElementById('dp').value.trim();
+  showLoad('AI가 그림 분석 중...');
+  try{var t=await callAI('Make a cute SVG emoji from this drawing.'+(p?' '+p:''),b64,'image/png');var s=extractSVG(t);if(!s)throw new Error('SVG 생성 실패. 다시 시도해주세요.');showRes(svgUrl(s),anims.ag1);}
+  catch(e){hideLoad();showErr('de',e.message);}
+}
+async function genPrompt(){
+  hideErrs();
+  var p=document.getElementById('pt').value.trim();
+  if(!p){showErr('pe','이모티콘 설명을 입력해주세요!');return;}
+  showLoad('AI가 이모티콘 그리는 중...');
+  try{var t=await callAI('Draw this as a cute SVG emoji: '+p,null,null);var s=extractSVG(t);if(!s)throw new Error('SVG 생성 실패. 다시 시도해주세요.');showRes(svgUrl(s),anims.ag2);}
+  catch(e){hideLoad();showErr('pe',e.message);}
+}
+async function genUpAI(){
+  hideErrs();
+  if(!upB64){showErr('ue','이미지를 먼저 업로드해주세요!');return;}
+  var p=document.getElementById('upt').value.trim();
+  var b64=upB64.split(',')[1],mime=(upB64.match(/data:(image\/[\w+]+);/)||[])[1]||'image/jpeg';
+  showLoad('이미지 변환 중...');
+  try{var t=await callAI('Convert to cute SVG emoji sticker.'+(p?' '+p:''),b64,mime);var s=extractSVG(t);if(!s)throw new Error('SVG 생성 실패. 다시 시도해주세요.');showRes(svgUrl(s),anims.ag3);}
+  catch(e){hideLoad();showErr('ue',e.message);}
+}
+
+function dl(fmt){
+  if(!resUrl)return;
+  var img=new Image();img.crossOrigin='anonymous';
+  img.onload=function(){var c=document.createElement('canvas');c.width=512;c.height=512;c.getContext('2d').drawImage(img,56,56,400,400);var a=document.createElement('a');a.download='emoji_'+resAnim+'.'+fmt;a.href=c.toDataURL(fmt==='webp'?'image/webp':'image/png',.95);a.click();};
+  img.onerror=function(){var a=document.createElement('a');a.download='emoji.svg';a.href=resUrl;a.click();};
+  img.src=resUrl;
+}
+setColor('#ff6b9d');
+</script>
+</body>
+</html>
