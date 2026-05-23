@@ -314,7 +314,16 @@ function setUP(t){document.getElementById('upt').value=t;}
 function handleUp(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){upB64=ev.target.result;var img=document.getElementById('upPrev');img.src=ev.target.result;img.style.display='block';document.getElementById('uz').style.display='none';};r.readAsDataURL(f);}
 function showLoad(msg){document.querySelectorAll('.panel').forEach(function(p){p.style.display='none';});document.getElementById('loading').style.display='block';document.getElementById('result').style.display='none';document.getElementById('lmsg').innerHTML=msg||'만드는 중...';}
 function hideLoad(){document.getElementById('loading').style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.style.display='';});document.querySelector('.panel.on').style.display='block';}
-function showRes(url,anim){hideLoad();resUrl=url;resAnim=anim;var img=document.getElementById('rImg');img.src=url;img.className='anim-'+anim;document.getElementById('result').style.display='block';document.getElementById('result').scrollIntoView({behavior:'smooth'});}
+function showRes(url,anim){
+  hideLoad();resUrl=url;resAnim=anim;
+  var img=document.getElementById('rImg');
+  // 이전 src 완전히 초기화 후 재설정
+  img.src='';
+  img.className='anim-'+anim;
+  setTimeout(function(){ img.src=url; },30);
+  document.getElementById('result').style.display='block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth'});
+}
 function hideRes(){document.getElementById('result').style.display='none';}
 function again(){hideRes();}
 function showErr(id,msg){var e=document.getElementById(id);e.style.display='block';e.textContent='⚠️ '+msg;}
@@ -386,9 +395,33 @@ async function genUpAI(){
 
 function dl(fmt){
   if(!resUrl)return;
-  var img=new Image();img.crossOrigin='anonymous';
-  img.onload=function(){var c=document.createElement('canvas');c.width=512;c.height=512;c.getContext('2d').drawImage(img,56,56,400,400);var a=document.createElement('a');a.download='emoji_'+resAnim+'.'+fmt;a.href=c.toDataURL(fmt==='webp'?'image/webp':'image/png',.95);a.click();};
-  img.onerror=function(){var a=document.createElement('a');a.download='emoji.svg';a.href=resUrl;a.click();};
+  // 파일명 입력
+  var defaultName='emoji_'+resAnim;
+  var fname=prompt('저장할 파일 이름을 입력하세요 (.'+fmt+' 제외)',defaultName);
+  if(fname===null)return; // 취소
+  if(!fname.trim())fname=defaultName;
+  fname=fname.trim().replace(/[/\\:*?"<>|]/g,'_');
+
+  var img=new Image();
+  img.onload=function(){
+    var c=document.createElement('canvas');c.width=512;c.height=512;
+    var cx=c.getContext('2d');
+    cx.clearRect(0,0,512,512);
+    cx.drawImage(img,56,56,400,400);
+    var a=document.createElement('a');
+    a.download=fname+'.'+fmt;
+    a.href=c.toDataURL(fmt==='webp'?'image/webp':'image/png',.95);
+    a.click();
+  };
+  img.onerror=function(){
+    // canvas 실패시 SVG 직접 저장
+    var svgStr=decodeURIComponent(resUrl.replace('data:image/svg+xml;charset=utf-8,',''));
+    var blob=new Blob([svgStr],{type:'image/svg+xml'});
+    var a=document.createElement('a');
+    a.download=fname+'.svg';
+    a.href=URL.createObjectURL(blob);
+    a.click();
+  };
   img.src=resUrl;
 }
 // 저장된 키 자동 로드
