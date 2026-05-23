@@ -341,13 +341,20 @@ function showRes(svgOrUrl, anim){
   }
 
   resUrl = svgStr; // SVG 원본 저장
-  var parser = new DOMParser();
-  var doc = parser.parseFromString(svgStr, 'image/svg+xml');
-  var svgEl = doc.querySelector('svg');
-  if(!svgEl){ wrap.innerHTML = '<p style="color:#ff6b9d;font-size:11px">SVG 파싱 오류</p>'; return; }
-  svgEl.style.cssText = 'width:100%;height:100%;';
-  svgEl.className = 'anim-' + anim;
-  wrap.appendChild(svgEl);
+  // SVG를 이미지로 변환해서 표시 (가장 안전한 방법)
+  var blob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+  var blobUrl = URL.createObjectURL(blob);
+  var imgEl = document.createElement('img');
+  imgEl.style.cssText = 'width:100%;height:100%;object-fit:contain;';
+  imgEl.className = 'anim-' + anim;
+  imgEl.onload = function(){ URL.revokeObjectURL(blobUrl); };
+  imgEl.onerror = function(){
+    // blob 실패시 data URI로 재시도
+    var dataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+    imgEl.src = dataUri;
+  };
+  imgEl.src = blobUrl;
+  wrap.appendChild(imgEl);
 
   document.getElementById('result').style.display='block';
   document.getElementById('result').scrollIntoView({behavior:'smooth'});
