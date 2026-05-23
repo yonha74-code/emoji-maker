@@ -1,3 +1,7 @@
+export const config = {
+  api: { bodyParser: { sizeLimit: '10mb' } }
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -25,7 +29,7 @@ export default async function handler(req, res) {
     const match = text.match(/<svg[\s\S]*?<\/svg>/i);
     const svg = match ? match[0] : null;
 
-    res.status(200).json({ svg, raw: text });
+    res.status(200).json({ svg, raw: text.slice(0, 200) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
