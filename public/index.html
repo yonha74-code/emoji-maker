@@ -394,22 +394,29 @@ var SVG_SYS='Output ONLY raw SVG. No markdown, no backticks. viewBox="0 0 200 20
 
 async function callAI(textPrompt,imageB64,imageMime){
   if(!apiKey)throw new Error('API 키를 먼저 입력하고 저장해주세요!');
-  var r,d;
+  var r, text, d;
+
+  async function safeJson(resp){
+    var t = await resp.text();
+    try{ return JSON.parse(t); }
+    catch(e){ throw new Error('서버 응답 오류: '+t.slice(0,120)); }
+  }
+
   if(provider==='google'){
     var parts=[];
-    if(imageB64)parts.push({inline_data:{mime_type:imageMime||'image/png',data:imageB64}});
+    if(imageB64)parts.push({inline_data:{mime_type:imageMime||'image/jpeg',data:imageB64}});
     parts.push({text:textPrompt});
     r=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey},body:JSON.stringify({parts:parts,systemPrompt:SVG_SYS})});
-    d=await r.json();
-    if(!r.ok)throw new Error((d.error&&(d.error.message||d.error))||'Gemini 오류 '+r.status);
+    d=await safeJson(r);
+    if(!r.ok)throw new Error(d.error||'Gemini 오류 '+r.status);
     return d;
   } else {
     var content=[];
-    if(imageB64)content.push({type:'image',source:{type:'base64',media_type:imageMime||'image/png',data:imageB64}});
+    if(imageB64)content.push({type:'image',source:{type:'base64',media_type:imageMime||'image/jpeg',data:imageB64}});
     content.push({type:'text',text:textPrompt});
     r=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SVG_SYS,messages:[{role:'user',content:content}]})});
-    d=await r.json();
-    if(!r.ok)throw new Error((d.error&&(d.error.message||d.error))||'Claude 오류 '+r.status);
+    d=await safeJson(r);
+    if(!r.ok)throw new Error(d.error||'Claude 오류 '+r.status);
     return d;
   }
 }
