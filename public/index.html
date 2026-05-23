@@ -296,13 +296,16 @@ function setProv(p){
   ['google','anthropic'].forEach(function(id){document.getElementById('prov-'+id).classList.toggle('on',id===p);});
   document.getElementById('apiKey').placeholder=p==='google'?'AIza... (Google AI Studio)':'sk-ant-... (Anthropic)';
   var s=document.getElementById('apist');s.textContent='키를 입력해주세요';s.className='apist';
+  localStorage.setItem('emoji_provider', p);
 }
 function saveKey(){
   var v=document.getElementById('apiKey').value.trim();
   if(!v){var s=document.getElementById('apist');s.textContent='키를 입력해주세요';s.className='apist no';return;}
   apiKey=v;
+  localStorage.setItem('emoji_apikey', v);
+  localStorage.setItem('emoji_provider', provider);
   var s=document.getElementById('apist');
-  s.textContent='✓ '+(provider==='google'?'Google Gemini':'Claude')+' 키 저장됨';s.className='apist ok';
+  s.textContent='✓ '+(provider==='google'?'Google Gemini':'Claude')+' 키 저장됨 (자동로그인)';s.className='apist ok';
 }
 function sw(id,el){document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});document.getElementById('p-'+id).classList.add('on');el.classList.add('on');hideRes();}
 function selA(el,gid){document.querySelectorAll('#'+gid+' .ao').forEach(function(e){e.classList.remove('on');});el.classList.add('on');anims[gid]=el.dataset.a;}
@@ -388,6 +391,19 @@ function dl(fmt){
   img.onerror=function(){var a=document.createElement('a');a.download='emoji.svg';a.href=resUrl;a.click();};
   img.src=resUrl;
 }
+// 저장된 키 자동 로드
+(function(){
+  var savedKey = localStorage.getItem('emoji_apikey');
+  var savedProv = localStorage.getItem('emoji_provider');
+  if(savedProv){ setProv(savedProv); }
+  if(savedKey){
+    apiKey = savedKey;
+    document.getElementById('apiKey').value = savedKey;
+    var s=document.getElementById('apist');
+    s.textContent='✓ '+(provider==='google'?'Google Gemini':'Claude')+' 키 자동 로드됨';
+    s.className='apist ok';
+  }
+})();
 setColor('#ff6b9d');
 </script>
 </body>
