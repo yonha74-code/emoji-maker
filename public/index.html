@@ -323,42 +323,50 @@ var SVG_SYS='Output ONLY raw SVG. No markdown, no backticks. viewBox="0 0 200 20
 
 async function callAI(textPrompt,imageB64,imageMime){
   if(!apiKey)throw new Error('API 키를 먼저 입력하고 저장해주세요!');
+  var r,d;
   if(provider==='google'){
     var parts=[];
     if(imageB64)parts.push({inline_data:{mime_type:imageMime||'image/png',data:imageB64}});
     parts.push({text:textPrompt});
-    var r=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey},body:JSON.stringify({parts:parts,systemPrompt:SVG_SYS})});
-    if(!r.ok){var e=await r.json();throw new Error((e.error&&e.error.message)||'Gemini 오류 '+r.status);}
-    var d=await r.json();
-    return((d.candidates||[])[0]||{content:{parts:[]}}).content.parts.map(function(p){return p.text||'';}).join('');
+    r=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey},body:JSON.stringify({parts:parts,systemPrompt:SVG_SYS})});
+    d=await r.json();
+    if(!r.ok)throw new Error((d.error&&(d.error.message||d.error))||'Gemini 오류 '+r.status);
+    return d;
   } else {
     var content=[];
     if(imageB64)content.push({type:'image',source:{type:'base64',media_type:imageMime||'image/png',data:imageB64}});
     content.push({type:'text',text:textPrompt});
-    var r=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SVG_SYS,messages:[{role:'user',content:content}]})});
-    if(!r.ok){var e=await r.json();throw new Error((e.error&&e.error.message)||'Claude 오류 '+r.status);}
-    var d=await r.json();
-    return(d.content||[]).map(function(c){return c.text||'';}).join('');
+    r=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SVG_SYS,messages:[{role:'user',content:content}]})});
+    d=await r.json();
+    if(!r.ok)throw new Error((d.error&&(d.error.message||d.error))||'Claude 오류 '+r.status);
+    return d;
   }
 }
 
-function svgUrl(s){return URL.createObjectURL(new Blob([s],{type:'image/svg+xml'}));}
-function extractSVG(t){var m=t.match(/<svg[\s\S]*?<\/svg>/i);return m?m[0]:null;}
+function svgDataUrl(s){
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);
+}
 
 async function genDraw(){
   hideErrs();
   var b64=canvas.toDataURL('image/png').split(',')[1],p=document.getElementById('dp').value.trim();
   showLoad('AI가 그림 분석 중...');
-  try{var t=await callAI('Make a cute SVG emoji from this drawing.'+(p?' '+p:''),b64,'image/png');var s=extractSVG(t);if(!s)throw new Error('SVG 생성 실패. 다시 시도해주세요.');showRes(svgUrl(s),anims.ag1);}
-  catch(e){hideLoad();showErr('de',e.message);}
+  try{
+    var d=await callAI('Make a cute SVG emoji from this drawing.'+(p?' '+p:''),b64,'image/png');
+    if(!d.svg)throw new Error(d.error||'SVG 생성 실패. 다시 시도해주세요.');
+    showRes(svgDataUrl(d.svg),anims.ag1);
+  }catch(e){hideLoad();showErr('de',e.message);}
 }
 async function genPrompt(){
   hideErrs();
   var p=document.getElementById('pt').value.trim();
   if(!p){showErr('pe','이모티콘 설명을 입력해주세요!');return;}
   showLoad('AI가 이모티콘 그리는 중...');
-  try{var t=await callAI('Draw this as a cute SVG emoji: '+p,null,null);var s=extractSVG(t);if(!s)throw new Error('SVG 생성 실패. 다시 시도해주세요.');showRes(svgUrl(s),anims.ag2);}
-  catch(e){hideLoad();showErr('pe',e.message);}
+  try{
+    var d=await callAI('Draw this as a cute SVG emoji: '+p,null,null);
+    if(!d.svg)throw new Error(d.error||'SVG 생성 실패. 다시 시도해주세요.');
+    showRes(svgDataUrl(d.svg),anims.ag2);
+  }catch(e){hideLoad();showErr('pe',e.message);}
 }
 async function genUpAI(){
   hideErrs();
@@ -366,8 +374,11 @@ async function genUpAI(){
   var p=document.getElementById('upt').value.trim();
   var b64=upB64.split(',')[1],mime=(upB64.match(/data:(image\/[\w+]+);/)||[])[1]||'image/jpeg';
   showLoad('이미지 변환 중...');
-  try{var t=await callAI('Convert to cute SVG emoji sticker.'+(p?' '+p:''),b64,mime);var s=extractSVG(t);if(!s)throw new Error('SVG 생성 실패. 다시 시도해주세요.');showRes(svgUrl(s),anims.ag3);}
-  catch(e){hideLoad();showErr('ue',e.message);}
+  try{
+    var d=await callAI('Convert to cute SVG emoji sticker.'+(p?' '+p:''),b64,mime);
+    if(!d.svg)throw new Error(d.error||'SVG 생성 실패. 다시 시도해주세요.');
+    showRes(svgDataUrl(d.svg),anims.ag3);
+  }catch(e){hideLoad();showErr('ue',e.message);}
 }
 
 function dl(fmt){
